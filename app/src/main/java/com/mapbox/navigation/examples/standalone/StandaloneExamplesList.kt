@@ -7,6 +7,7 @@ import com.mapbox.navigation.examples.R
 import com.mapbox.navigation.examples.standalone.alternative.ShowAlternativeRoutesActivity
 import com.mapbox.navigation.examples.standalone.arrival.CustomArrivalActivity
 import com.mapbox.navigation.examples.standalone.building.ShowBuildingExtrusionsActivity
+import com.mapbox.navigation.examples.standalone.buildinghighlight.BuildingHighlightActivity
 import com.mapbox.navigation.examples.standalone.callout.CustomRouteCalloutActivity
 import com.mapbox.navigation.examples.standalone.camera.ShowCameraTransitionsActivity
 import com.mapbox.navigation.examples.standalone.compose.JetpackComposeActivity
@@ -31,6 +32,12 @@ fun Context.examplesList() = listOf(
         getString(R.string.title_jetpack_compose),
         getString(R.string.description_jetpack_compose),
         JetpackComposeActivity::class.java
+    ),
+    MapboxExample(
+        ContextCompat.getDrawable(this, R.drawable.mapbox_screenshot_building_highlight),
+        getString(R.string.title_building_highlight),
+        getString(R.string.description_building_highlight),
+        BuildingHighlightActivity::class.java
     ),
     MapboxExample(
         ContextCompat.getDrawable(this, R.drawable.mapbox_screenshot_custom_route_callout),
