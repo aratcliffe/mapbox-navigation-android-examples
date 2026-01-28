@@ -1,0 +1,6 @@
+<resources>
+
+    <string name="title_custom_maneuver_layout">Customize MapboxManeuverView with fullscreen expanded list</string>
+    <string name="description_custom_maneuver_layout">Demonstrates overriding SDK layout files to create a fullscreen maneuver list with a close button, addressing iOS/Android UX parity.</string>
+
+</resources>

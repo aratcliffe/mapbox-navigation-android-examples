@@ -26,6 +26,11 @@
         android:exported="false"
         />
 
+    <activity android:name=".standalone.custommaneuver.CustomManeuverLayoutActivity"
+        android:screenOrientation="portrait"
+        android:exported="false"
+        />
+
     <activity android:name=".standalone.buildinghighlight.BuildingHighlightActivity"
         android:screenOrientation="portrait"
         android:exported="false"
