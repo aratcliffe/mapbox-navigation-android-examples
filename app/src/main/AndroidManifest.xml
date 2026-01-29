@@ -31,6 +31,11 @@
         android:exported="false"
         />
 
+    <activity android:name=".standalone.buildingannotation.BuildingAnnotationActivity"
+        android:screenOrientation="portrait"
+        android:exported="false"
+        />
+
     <activity android:name=".standalone.fetchroute.FetchARouteActivity"
         android:screenOrientation="portrait"
         android:exported="false"
