@@ -268,7 +268,7 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                 mapViewportState = mapViewportState,
             ) {
                 GenericStyle(
-                    style = "mapbox://styles/mapbox-map-design/standard-pr-grubhub-height-property",
+                    style = "mapbox://styles/mapbox/standard",
                     styleState = rememberStyleState {
                         styleImportsConfig = styleImportsConfig {
                             importConfig("basemap") {
