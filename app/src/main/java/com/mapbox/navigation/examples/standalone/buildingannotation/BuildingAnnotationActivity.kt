@@ -101,7 +101,12 @@ class BuildingAnnotationActivity : AppCompatActivity() {
      * When set, the BuildingAnnotation appears in the composition.
      * When null, the annotation is removed.
      */
-    private val buildingPoints = mutableStateOf<List<Point>?>(null)
+    private data class BuildingData(
+        val points: List<Point>,
+        val height: Double
+    )
+
+    private val buildingData = mutableStateOf<BuildingData?>(null)
 
     /**
      * Coroutine scope for async building queries.
@@ -189,7 +194,7 @@ class BuildingAnnotationActivity : AppCompatActivity() {
 
         override fun onNextRouteLegStart(routeLegProgress: RouteLegProgress) {
             // Remove annotation by clearing state
-            buildingPoints.value = null
+            buildingData.value = null
         }
 
         override fun onWaypointArrival(routeProgress: RouteProgress) {
@@ -273,11 +278,11 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                     }
                 )
 
-                // Add BuildingAnnotation when points are available
-                buildingPoints.value?.let { points ->
+                // Add BuildingAnnotation when data is available
+                buildingData.value?.let { data ->
                     BuildingAnnotation(
-                        points = points,
-                        fillExtrusionHeight = 50.0
+                        points = data.points,
+                        fillExtrusionHeight = data.height
                     )
                 }
 
@@ -419,7 +424,18 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                 if (firstFeature != null) {
                     val points = firstFeature.geometry.toPoints()
                     if (points != null) {
-                        buildingPoints.value = points
+                        val estHeightValue = firstFeature.properties.opt("est_height")
+                        val heightValue = firstFeature.properties.opt("height")
+
+                        val height = when (estHeightValue) {
+                            is Number -> estHeightValue.toDouble()
+                            else -> null
+                        } ?: when (heightValue) {
+                            is Number -> heightValue.toDouble()
+                            else -> null
+                        } ?: 50.0
+
+                        buildingData.value = BuildingData(points, height)
                     }
                 }
             } catch (e: Exception) {
