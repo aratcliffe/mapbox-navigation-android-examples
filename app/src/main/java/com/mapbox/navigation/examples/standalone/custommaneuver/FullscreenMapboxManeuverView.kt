@@ -83,5 +83,8 @@ fun FullscreenMapboxManeuverView(
                 onCollapsed = onCollapsed
             )
         },
+        onRelease = { maneuverView ->
+            maneuverView.unbindFullscreenState()
+        }
     )
 }
