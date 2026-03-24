@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.updatePaddingRelative
+import com.mapbox.api.directions.v5.DirectionsCriteria.PROFILE_CYCLING
 import com.mapbox.api.directions.v5.models.Bearing
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
@@ -539,12 +540,13 @@ class JetpackComposeActivity : AppCompatActivity() {
                         }
                     }
                 )
-                .layersList(
-                    buildList {
-                        add(mapboxNavigation.getZLevel())
-                        repeat(addedWaypoints.size - 1) { add(null) }
-                    }
-                )
+                .profile(PROFILE_CYCLING)
+//                .layersList(
+//                    buildList {
+//                        add(mapboxNavigation.getZLevel())
+//                        repeat(addedWaypoints.size - 1) { add(null) }
+//                    }
+//                )
                 .build(),
             object : NavigationRouterCallback {
                 override fun onCanceled(routeOptions: RouteOptions, routerOrigin: String) {

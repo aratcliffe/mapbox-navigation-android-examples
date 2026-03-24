@@ -45,7 +45,6 @@ import com.mapbox.navigation.base.route.RouterOrigin
 import com.mapbox.navigation.base.trip.model.RouteLegProgress
 import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.core.MapboxNavigation
-import com.mapbox.navigation.core.arrival.ArrivalObserver
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.lifecycle.MapboxNavigationApp
 import com.mapbox.navigation.core.lifecycle.MapboxNavigationObserver
@@ -54,6 +53,7 @@ import com.mapbox.navigation.core.replay.route.ReplayProgressObserver
 import com.mapbox.navigation.core.replay.route.ReplayRouteMapper
 import com.mapbox.navigation.core.trip.session.LocationMatcherResult
 import com.mapbox.navigation.core.trip.session.LocationObserver
+import com.mapbox.navigation.core.trip.session.RouteProgressObserver
 import com.mapbox.navigation.ui.maps.location.NavigationLocationProvider
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineApi
 import com.mapbox.navigation.ui.maps.route.line.api.MapboxRouteLineView
@@ -112,6 +112,17 @@ class BuildingAnnotationActivity : AppCompatActivity() {
      * Coroutine scope for async building queries.
      */
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    /**
+     * Distance threshold in meters to trigger building highlighting.
+     */
+    private val distanceThresholdMeters = 100.0
+
+    /**
+     * Flag to ensure building highlighting happens only once per route.
+     * Reset when a new route is set or navigation restarts.
+     */
+    private var buildingHighlightTriggered = false
 
     /**
      * [NavigationLocationProvider] provides location updates from Navigation SDK to Maps SDK.
@@ -181,24 +192,32 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                 routeLineView.renderRouteDrawData(this, value)
             }
         }
+
+        // Reset building highlight state when routes change
+        buildingHighlightTriggered = false
+        buildingData.value = null
     }
 
     /**
-     * Handles arrival events for building highlighting.
+     * Observes route progress to trigger building highlighting at a distance threshold.
+     * Highlights the destination building when within 100 meters of final destination.
      */
-    private val arrivalObserver: ArrivalObserver = object : ArrivalObserver {
-        override fun onFinalDestinationArrival(routeProgress: RouteProgress) {
-            val destination = extractLegDestination(routeProgress) ?: return
+    private val routeProgressObserver = RouteProgressObserver { routeProgress ->
+        // Only proceed if we haven't already triggered the highlight for this route
+        if (buildingHighlightTriggered) {
+            return@RouteProgressObserver
+        }
+
+        // Check if we're within the distance threshold of the final destination
+        if (routeProgress.distanceRemaining <= distanceThresholdMeters) {
+            // Extract destination point and trigger building query
+            val destination = extractLegDestination(routeProgress) ?: return@RouteProgressObserver
+
+            // Set flag to prevent repeated triggering
+            buildingHighlightTriggered = true
+
+            // Query and highlight the building at destination
             queryAndHighlightBuilding(destination)
-        }
-
-        override fun onNextRouteLegStart(routeLegProgress: RouteLegProgress) {
-            // Remove annotation by clearing state
-            buildingData.value = null
-        }
-
-        override fun onWaypointArrival(routeProgress: RouteProgress) {
-            // Not handling waypoint arrivals in this example
         }
     }
 
@@ -207,7 +226,7 @@ class BuildingAnnotationActivity : AppCompatActivity() {
             @SuppressLint("MissingPermission")
             override fun onAttached(mapboxNavigation: MapboxNavigation) {
                 mapboxNavigation.registerRoutesObserver(routesObserver)
-                mapboxNavigation.registerArrivalObserver(arrivalObserver)
+                mapboxNavigation.registerRouteProgressObserver(routeProgressObserver)
                 mapboxNavigation.registerLocationObserver(locationObserver)
 
                 if (enableRouteSimulation) {
@@ -221,7 +240,7 @@ class BuildingAnnotationActivity : AppCompatActivity() {
 
             override fun onDetached(mapboxNavigation: MapboxNavigation) {
                 mapboxNavigation.unregisterRoutesObserver(routesObserver)
-                mapboxNavigation.unregisterArrivalObserver(arrivalObserver)
+                mapboxNavigation.unregisterRouteProgressObserver(routeProgressObserver)
                 mapboxNavigation.unregisterLocationObserver(locationObserver)
 
                 if (enableRouteSimulation) {
