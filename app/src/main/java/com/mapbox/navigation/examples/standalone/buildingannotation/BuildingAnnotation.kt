@@ -28,6 +28,12 @@ import com.mapbox.maps.extension.compose.MapboxMapComposable
  * @param fillExtrusionOpacity The opacity of the building extrusion (0.0-1.0, default: 0.8)
  * @param fillExtrusionHeight The height of the building extrusion in meters (default: 50.0)
  * @param fillExtrusionBase The base elevation of the building extrusion in meters (default: 0.0)
+ * @param labelText Optional text label to display above the building, elevated to the rooftop (default: null)
+ * @param textColor Color of the label text in day light preset (ARGB Int, default: hsl(0,0%,25%) = #404040)
+ * @param textColorNight Color of the label text in night light preset (ARGB Int).
+ *   Falls back to [textColor] if not provided.
+ * @param textSize Size of the label text in sp (default: 16.0)
+ * @param textFont Font stack for the label (default: ["DIN Pro Medium", "Arial Unicode MS Regular"])
  */
 @Composable
 @MapboxMapComposable
@@ -36,17 +42,27 @@ fun BuildingAnnotation(
     @ColorInt fillExtrusionColor: Int = 0xFF3489F9.toInt(),
     fillExtrusionOpacity: Double = 0.8,
     fillExtrusionHeight: Double = 50.0,
-    fillExtrusionBase: Double = 0.0
+    fillExtrusionBase: Double = 0.0,
+    labelText: String? = null,
+    @ColorInt textColor: Int = 0xFF404040.toInt(),
+    @ColorInt textColorNight: Int = 0xFFFFFFFF.toInt(),
+    textSize: Double = 16.0,
+    textFont: List<String> = listOf("DIN Pro Medium", "Arial Unicode MS Regular")
 ) {
-    DisposableMapEffect(points, fillExtrusionColor, fillExtrusionOpacity, fillExtrusionHeight, fillExtrusionBase) { mapView ->
+    DisposableMapEffect(points, fillExtrusionColor, fillExtrusionOpacity, fillExtrusionHeight, fillExtrusionBase, labelText, textColor, textColorNight, textSize, textFont) { mapView ->
         val manager = BuildingAnnotationManager(mapView)
+        manager.textFont = textFont
 
         val annotation = BuildingAnnotationOptions(
             points = points,
             fillExtrusionColor = fillExtrusionColor,
             fillExtrusionOpacity = fillExtrusionOpacity,
             fillExtrusionHeight = fillExtrusionHeight,
-            fillExtrusionBase = fillExtrusionBase
+            fillExtrusionBase = fillExtrusionBase,
+            labelText = labelText,
+            textColor = textColor,
+            textColorNight = textColorNight,
+            textSize = textSize
         )
         manager.annotations = listOf(annotation)
 

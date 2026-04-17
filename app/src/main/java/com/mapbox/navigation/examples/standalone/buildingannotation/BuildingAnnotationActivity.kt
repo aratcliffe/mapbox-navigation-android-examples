@@ -42,7 +42,6 @@ import com.mapbox.navigation.base.route.NavigationRoute
 import com.mapbox.navigation.base.route.NavigationRouterCallback
 import com.mapbox.navigation.base.route.RouterFailure
 import com.mapbox.navigation.base.route.RouterOrigin
-import com.mapbox.navigation.base.trip.model.RouteLegProgress
 import com.mapbox.navigation.base.trip.model.RouteProgress
 import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.directions.session.RoutesObserver
@@ -291,6 +290,7 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                     styleState = rememberStyleState {
                         styleImportsConfig = styleImportsConfig {
                             importConfig("basemap") {
+                                config("lightPreset", Expression.literal("night"))
                                 config("show3dObjects", Expression.literal(false))
                             }
                         }
@@ -301,7 +301,8 @@ class BuildingAnnotationActivity : AppCompatActivity() {
                 buildingData.value?.let { data ->
                     BuildingAnnotation(
                         points = data.points,
-                        fillExtrusionHeight = data.height
+                        fillExtrusionHeight = data.height,
+                        labelText = "Destination"
                     )
                 }
 
