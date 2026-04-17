@@ -5,6 +5,7 @@ import androidx.core.content.ContextCompat
 import com.mapbox.navigation.examples.MapboxExample
 import com.mapbox.navigation.examples.R
 import com.mapbox.navigation.examples.standalone.alternative.ShowAlternativeRoutesActivity
+import com.mapbox.navigation.examples.standalone.arcannotation.ArcAnnotationActivity
 import com.mapbox.navigation.examples.standalone.arrival.CustomArrivalActivity
 import com.mapbox.navigation.examples.standalone.building.ShowBuildingExtrusionsActivity
 import com.mapbox.navigation.examples.standalone.callout.CustomRouteCalloutActivity
@@ -31,6 +32,12 @@ fun Context.examplesList() = listOf(
         getString(R.string.title_jetpack_compose),
         getString(R.string.description_jetpack_compose),
         JetpackComposeActivity::class.java
+    ),
+    MapboxExample(
+        ContextCompat.getDrawable(this, R.drawable.mapbox_ic_user_current_location),
+        "Arc Annotation",
+        "Draws a dashed arc between two points",
+        ArcAnnotationActivity::class.java
     ),
     MapboxExample(
         ContextCompat.getDrawable(this, R.drawable.mapbox_screenshot_custom_route_callout),

@@ -26,6 +26,11 @@
         android:exported="false"
         />
 
+    <activity android:name=".standalone.arcannotation.ArcAnnotationActivity"
+        android:screenOrientation="portrait"
+        android:exported="false"
+        />
+
     <activity android:name=".standalone.fetchroute.FetchARouteActivity"
         android:screenOrientation="portrait"
         android:exported="false"
