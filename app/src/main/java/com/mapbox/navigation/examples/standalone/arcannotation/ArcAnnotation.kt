@@ -9,6 +9,7 @@ import com.mapbox.maps.extension.compose.MapboxMapComposable
 import com.mapbox.maps.extension.style.layers.addLayer
 import com.mapbox.maps.extension.style.layers.generated.lineLayer
 import com.mapbox.maps.extension.style.layers.getLayer
+import com.mapbox.maps.extension.style.layers.properties.generated.LineCap
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.sources.getSource
@@ -58,6 +59,7 @@ fun ArcAnnotation(
                     lineColor(lineColor)
                     lineWidth(lineWidth)
                     lineOpacity(lineOpacity)
+                    lineCap(LineCap.ROUND)
                     lineDasharray(lineDashArray)
                     slot("top")
                 }

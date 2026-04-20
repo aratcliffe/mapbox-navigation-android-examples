@@ -14,6 +14,7 @@ import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportS
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotation
 import com.mapbox.maps.extension.compose.annotation.generated.CircleAnnotationState
 import com.mapbox.maps.extension.compose.style.GenericStyle
+import com.mapbox.maps.extension.compose.style.slotsContent
 
 /**
  * Demonstrates how to draw a dashed curved arc between two points using ArcAnnotation.
@@ -53,7 +54,7 @@ class ArcAnnotationActivity : AppCompatActivity() {
         val originState = remember {
             CircleAnnotationState().apply {
                 circleRadius = 8.0
-                circleColor = Color(0xFFFF69B4) // pink
+                circleColor = Color(0xFFFF69B4)
                 circleStrokeWidth = 2.0
                 circleStrokeColor = Color.White
             }
@@ -61,7 +62,7 @@ class ArcAnnotationActivity : AppCompatActivity() {
         val destinationState = remember {
             CircleAnnotationState().apply {
                 circleRadius = 8.0
-                circleColor = Color(0xFF007AFF) // blue
+                circleColor = Color(0xFF007AFF)
                 circleStrokeWidth = 2.0
                 circleStrokeColor = Color.White
             }
@@ -71,11 +72,14 @@ class ArcAnnotationActivity : AppCompatActivity() {
             modifier = Modifier.fillMaxSize(),
             mapViewportState = mapViewportState,
         ) {
-            GenericStyle(style = "mapbox://styles/mapbox/standard")
-            ArcAnnotation(
-                start = origin,
-                end = destination,
-            )
+            GenericStyle(style = "mapbox://styles/mapbox/standard", slotsContent = slotsContent {
+                slot("top") {
+                    ArcAnnotation(
+                        start = origin,
+                        end = destination,
+                    )
+                }
+            })
             CircleAnnotation(point = origin, circleAnnotationState = originState)
             CircleAnnotation(point = destination, circleAnnotationState = destinationState)
         }
