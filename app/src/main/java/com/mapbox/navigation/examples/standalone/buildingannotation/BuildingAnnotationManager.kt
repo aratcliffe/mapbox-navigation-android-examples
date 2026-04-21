@@ -218,6 +218,7 @@ class BuildingAnnotationManager(private val mapView: MapView) {
                         symbolZOrder(SymbolZOrder.AUTO)
                         textField(get("label"))
                         textVariableAnchor(listOf("top", "bottom", "left", "right"))
+                        textRadialOffset(0.5)
                         textAnchor(get("textAnchor"))
                         textEmissiveStrength(1.0)
                         textColor(
@@ -290,7 +291,7 @@ class BuildingAnnotationManager(private val mapView: MapView) {
         // Shift 5 meters inward from the boundary toward the centroid
         val bearing = TurfMeasurement.bearing(nearest, centroid)
         val boundaryToCentroidMeters = TurfMeasurement.distance(nearest, centroid, TurfConstants.UNIT_METERS)
-        val insetMeters = minOf(5.0, boundaryToCentroidMeters * 0.5)
+        val insetMeters = boundaryToCentroidMeters * 0.25
         val labelPosition = TurfMeasurement.destination(nearest, insetMeters, bearing, TurfConstants.UNIT_METERS)
 
         return Feature.fromGeometry(labelPosition).apply {
