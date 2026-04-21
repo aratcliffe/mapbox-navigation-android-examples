@@ -14,6 +14,7 @@ import com.mapbox.maps.extension.style.layers.generated.SymbolLayer
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
 import com.mapbox.maps.extension.style.layers.properties.generated.SymbolZOrder
+import com.mapbox.maps.extension.style.layers.properties.generated.TextJustify
 import com.mapbox.maps.extension.style.layers.properties.generated.Visibility
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
@@ -21,7 +22,6 @@ import com.mapbox.maps.extension.style.sources.getSource
 import com.mapbox.maps.extension.style.layers.getLayer
 import com.mapbox.turf.TurfConstants
 import com.mapbox.turf.TurfMeasurement
-import kotlin.math.abs
 import com.mapbox.geojson.Polygon as GeoJsonPolygon
 import java.util.concurrent.atomic.AtomicLong
 
@@ -217,9 +217,8 @@ class BuildingAnnotationManager(private val mapView: MapView) {
                         symbolZElevate(true)
                         symbolZOrder(SymbolZOrder.AUTO)
                         textField(get("label"))
-                        textVariableAnchor(listOf("top", "bottom", "left", "right"))
-                        textRadialOffset(0.5)
-                        textAnchor(get("textAnchor"))
+                        textVariableAnchor(listOf("center", "top", "bottom", "left", "right"))
+                        textJustify(TextJustify.AUTO)
                         textEmissiveStrength(1.0)
                         textColor(
                             Expression.fromRaw("""["interpolate",["linear"],["measure-light","brightness"],0.25,["get","textColorNight"],0.3,["get","textColorDay"]]""")
@@ -281,14 +280,6 @@ class BuildingAnnotationManager(private val mapView: MapView) {
             ?: annotation.points.first()
 
         val nearest = annotation.labelPosition ?: centroid
-        val dx = nearest.longitude() - centroid.longitude()
-        val dy = nearest.latitude() - centroid.latitude()
-        val anchor = if (abs(dx) >= abs(dy)) {
-            if (dx > 0) "right" else "left"
-        } else {
-            if (dy > 0) "top" else "bottom"
-        }
-        // Shift 5 meters inward from the boundary toward the centroid
         val bearing = TurfMeasurement.bearing(nearest, centroid)
         val boundaryToCentroidMeters = TurfMeasurement.distance(nearest, centroid, TurfConstants.UNIT_METERS)
         val insetMeters = boundaryToCentroidMeters * 0.25
@@ -296,7 +287,6 @@ class BuildingAnnotationManager(private val mapView: MapView) {
 
         return Feature.fromGeometry(labelPosition).apply {
             addStringProperty("label", annotation.labelText)
-            addStringProperty("textAnchor", anchor)
             addStringProperty("textColorDay", annotation.textColor ?: textColor)
             addStringProperty("textColorNight", annotation.textColorNight ?: textColorNight)
             addNumberProperty("textSize", annotation.textSize ?: textSize)
