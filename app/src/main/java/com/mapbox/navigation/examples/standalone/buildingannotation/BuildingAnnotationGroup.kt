@@ -1,6 +1,5 @@
 package com.mapbox.navigation.examples.standalone.buildingannotation
 
-import androidx.annotation.ColorInt
 import androidx.compose.runtime.Composable
 import com.mapbox.maps.extension.compose.DisposableMapEffect
 import com.mapbox.maps.extension.compose.MapboxMapComposable
@@ -22,11 +21,11 @@ import com.mapbox.maps.extension.compose.MapboxMapComposable
  *             ),
  *             BuildingAnnotationOptions(
  *                 points = building2Points,
- *                 fillExtrusionColor = 0xFF00FF00.toInt(),
+ *                 fillExtrusionColor = "#00FF00",
  *                 fillExtrusionHeight = 75.0
  *             )
  *         ),
- *         fillExtrusionColor = 0xFF3489F9.toInt(),  // Default blue
+ *         fillExtrusionColor = "#3489F9",  // Default blue
  *         fillExtrusionOpacity = 0.9,
  *         fillExtrusionHeight = 50.0,
  *         fillExtrusionBase = 0.0
@@ -35,22 +34,25 @@ import com.mapbox.maps.extension.compose.MapboxMapComposable
  * ```
  *
  * @param annotations The list of building annotation options to display
- * @param fillExtrusionColor The default color for all buildings in the group (default: 0xFF3489F9)
+ * @param fillExtrusionColor The default color for all buildings in the group (CSS color string, default: "#3489F9")
  * @param fillExtrusionOpacity The opacity for all buildings in the group (0.0-1.0, default: 0.8)
  * @param fillExtrusionHeight The default height for all buildings in the group in meters (default: 50.0)
  * @param fillExtrusionBase The default base elevation for all buildings in the group in meters (default: 0.0)
+ * @param slot The Mapbox Standard style slot to insert layers into (e.g. "bottom", "middle", "top")
  */
 @Composable
 @MapboxMapComposable
 fun BuildingAnnotationGroup(
     annotations: List<BuildingAnnotationOptions>,
-    @ColorInt fillExtrusionColor: Int = 0xFF3489F9.toInt(),
+    fillExtrusionColor: String = "#3489F9",
     fillExtrusionOpacity: Double = 0.8,
     fillExtrusionHeight: Double = 50.0,
-    fillExtrusionBase: Double = 0.0
+    fillExtrusionBase: Double = 0.0,
+    slot: String? = null,
 ) {
-    DisposableMapEffect(annotations, fillExtrusionColor, fillExtrusionOpacity, fillExtrusionHeight, fillExtrusionBase) { mapView ->
+    DisposableMapEffect(annotations, fillExtrusionColor, fillExtrusionOpacity, fillExtrusionHeight, fillExtrusionBase, slot) { mapView ->
         val manager = BuildingAnnotationManager(mapView)
+        manager.slot = slot
         manager.fillExtrusionColor = fillExtrusionColor
         manager.fillExtrusionOpacity = fillExtrusionOpacity
         manager.fillExtrusionHeight = fillExtrusionHeight

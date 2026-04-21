@@ -1,10 +1,10 @@
 package com.mapbox.navigation.examples.standalone.buildingannotation
 
-import androidx.annotation.ColorInt
 import com.mapbox.geojson.Feature
 import com.mapbox.geojson.FeatureCollection
 import com.mapbox.geojson.Point
 import com.mapbox.geojson.Polygon
+import android.util.Log
 import com.mapbox.maps.MapView
 import com.mapbox.maps.extension.style.expressions.dsl.generated.get
 import com.mapbox.maps.extension.style.expressions.generated.Expression
@@ -14,14 +14,14 @@ import com.mapbox.maps.extension.style.layers.generated.SymbolLayer
 import com.mapbox.maps.extension.style.layers.generated.symbolLayer
 import com.mapbox.maps.extension.style.layers.properties.generated.SymbolPlacement
 import com.mapbox.maps.extension.style.layers.properties.generated.SymbolZOrder
-import com.mapbox.maps.extension.style.layers.properties.generated.TextAnchor
 import com.mapbox.maps.extension.style.layers.properties.generated.Visibility
 import com.mapbox.maps.extension.style.sources.addSource
 import com.mapbox.maps.extension.style.sources.generated.geoJsonSource
 import com.mapbox.maps.extension.style.sources.getSource
 import com.mapbox.maps.extension.style.layers.getLayer
-import com.mapbox.maps.extension.style.utils.ColorUtils
+import com.mapbox.turf.TurfConstants
 import com.mapbox.turf.TurfMeasurement
+import kotlin.math.abs
 import com.mapbox.geojson.Polygon as GeoJsonPolygon
 import java.util.concurrent.atomic.AtomicLong
 
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong
  * ```
  * val manager = BuildingAnnotationManager(mapView)
  * // Set defaults for all annotations
- * manager.fillExtrusionColor = 0xFF00FF00.toInt()  // Green
+ * manager.fillExtrusionColor = "#00FF00"  // Green
  * manager.fillExtrusionOpacity = 0.9
  * manager.fillExtrusionHeight = 50.0
  *
@@ -83,10 +83,9 @@ class BuildingAnnotationManager(private val mapView: MapView) {
     /**
      * The default fillExtrusionColor for all annotations added to this annotation manager
      * if not overwritten by individual annotation settings.
-     * Default value: 0xFF3489F9 (blue)
+     * Default value: "#3489F9" (blue)
      */
-    @ColorInt
-    var fillExtrusionColor: Int = 0xFF3489F9.toInt()
+    var fillExtrusionColor: String = "#3489F9"
         set(value) {
             field = value
             updateAnnotations()
@@ -129,10 +128,9 @@ class BuildingAnnotationManager(private val mapView: MapView) {
 
     /**
      * The default text color for labels in the day light preset.
-     * Default value: hsl(0, 0%, 25%) = #404040, matching the Standard style road label color
+     * Default value: "#404040", matching the Standard style road label color
      */
-    @ColorInt
-    var textColor: Int = 0xFF404040.toInt()
+    var textColor: String = "#404040"
         set(value) {
             field = value
             updateAnnotations()
@@ -141,10 +139,9 @@ class BuildingAnnotationManager(private val mapView: MapView) {
     /**
      * The default text color for labels in the night light preset.
      * Falls back to [textColor] if null.
-     * Default value: null
+     * Default value: "#FFFFFF"
      */
-    @ColorInt
-    var textColorNight: Int = 0xFFFFFFFF.toInt()
+    var textColorNight: String = "#FFFFFF"
         set(value) {
             field = value
             updateAnnotations()
@@ -170,10 +167,19 @@ class BuildingAnnotationManager(private val mapView: MapView) {
             updateSymbolLayerStyle()
         }
 
+    /**
+     * The Mapbox Standard style slot to insert layers into (e.g. "bottom", "middle", "top").
+     * Must be set before the first [annotations] assignment, as slot is applied at layer creation
+     * time and cannot be changed afterwards.
+     * Default value: null (no slot — layers inserted at the top of the layer stack)
+     */
+    var slot: String? = null
+
     private fun setupLayer() {
         if (isInitialized) return
-
         mapView.mapboxMap.getStyle { style ->
+            if (isInitialized) return@getStyle
+
             try {
                 style.addSource(
                     geoJsonSource(sourceId) {
@@ -188,9 +194,15 @@ class BuildingAnnotationManager(private val mapView: MapView) {
                         fillExtrusionBase(get("base"))
                         fillExtrusionOpacity(fillExtrusionOpacity)
                         visibility(Visibility.VISIBLE)
+                        slot?.let { slot(it) }
                     }
                 )
+            } catch (e: Exception) {
+                Log.e("BuildingAnnotation", "Failed to set up fill extrusion layer", e)
+                return@getStyle
+            }
 
+            try {
                 style.addSource(
                     geoJsonSource(symbolSourceId) {
                         featureCollection(FeatureCollection.fromFeatures(emptyList()))
@@ -205,7 +217,8 @@ class BuildingAnnotationManager(private val mapView: MapView) {
                         symbolZElevate(true)
                         symbolZOrder(SymbolZOrder.AUTO)
                         textField(get("label"))
-                        textAnchor(TextAnchor.TOP)
+                        textVariableAnchor(listOf("top", "bottom", "left", "right"))
+                        textAnchor(get("textAnchor"))
                         textEmissiveStrength(1.0)
                         textColor(
                             Expression.fromRaw("""["interpolate",["linear"],["measure-light","brightness"],0.25,["get","textColorNight"],0.3,["get","textColorDay"]]""")
@@ -220,39 +233,43 @@ class BuildingAnnotationManager(private val mapView: MapView) {
                         visibility(Visibility.VISIBLE)
                     }
                 )
-
-                isInitialized = true
             } catch (e: Exception) {
-                // Silently handle errors
+                Log.e("BuildingAnnotation", "Failed to set up symbol layer", e)
             }
+
+            isInitialized = true
+            updateSources(style)
         }
     }
 
     private fun updateAnnotations() {
-        setupLayer()
-        if (!isInitialized) return
+        if (!isInitialized) {
+            setupLayer() // will call updateSources once initialized
+            return
+        }
+        mapView.mapboxMap.style?.let { updateSources(it) }
+    }
 
-        mapView.mapboxMap.getStyle { style ->
-            try {
-                val features = annotations.map { createFeature(it) }
-                val featureCollection = FeatureCollection.fromFeatures(features)
+    private fun updateSources(style: com.mapbox.maps.Style) {
+        try {
+            val features = annotations.map { createFeature(it) }
+            val featureCollection = FeatureCollection.fromFeatures(features)
 
-                style.getSource(sourceId)?.let { source ->
-                    (source as? com.mapbox.maps.extension.style.sources.generated.GeoJsonSource)?.data(
-                        featureCollection.toJson()
-                    )
-                }
-
-                val centroidFeatures = annotations.mapNotNull { createCentroidFeature(it) }
-                val centroidCollection = FeatureCollection.fromFeatures(centroidFeatures)
-                style.getSource(symbolSourceId)?.let { source ->
-                    (source as? com.mapbox.maps.extension.style.sources.generated.GeoJsonSource)?.data(
-                        centroidCollection.toJson()
-                    )
-                }
-            } catch (e: Exception) {
-                // Silently handle errors
+            style.getSource(sourceId)?.let { source ->
+                (source as? com.mapbox.maps.extension.style.sources.generated.GeoJsonSource)?.data(
+                    featureCollection.toJson()
+                )
             }
+
+            val centroidFeatures = annotations.mapNotNull { createCentroidFeature(it) }
+            val centroidCollection = FeatureCollection.fromFeatures(centroidFeatures)
+            style.getSource(symbolSourceId)?.let { source ->
+                (source as? com.mapbox.maps.extension.style.sources.generated.GeoJsonSource)?.data(
+                    centroidCollection.toJson()
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("BuildingAnnotation", "Failed to update sources", e)
         }
     }
 
@@ -261,10 +278,26 @@ class BuildingAnnotationManager(private val mapView: MapView) {
         val buildingFootprint = GeoJsonPolygon.fromLngLats(listOf(annotation.points))
         val centroid = TurfMeasurement.center(Feature.fromGeometry(buildingFootprint)).geometry() as? Point
             ?: annotation.points.first()
-        return Feature.fromGeometry(centroid).apply {
-            addStringProperty("label", annotation.labelText ?: "")
-            addStringProperty("textColorDay", ColorUtils.colorToRgbaString(annotation.textColor ?: textColor))
-            addStringProperty("textColorNight", ColorUtils.colorToRgbaString(annotation.textColorNight ?: textColorNight))
+
+        val nearest = annotation.labelPosition ?: centroid
+        val dx = nearest.longitude() - centroid.longitude()
+        val dy = nearest.latitude() - centroid.latitude()
+        val anchor = if (abs(dx) >= abs(dy)) {
+            if (dx > 0) "right" else "left"
+        } else {
+            if (dy > 0) "top" else "bottom"
+        }
+        // Shift 5 meters inward from the boundary toward the centroid
+        val bearing = TurfMeasurement.bearing(nearest, centroid)
+        val boundaryToCentroidMeters = TurfMeasurement.distance(nearest, centroid, TurfConstants.UNIT_METERS)
+        val insetMeters = minOf(5.0, boundaryToCentroidMeters * 0.5)
+        val labelPosition = TurfMeasurement.destination(nearest, insetMeters, bearing, TurfConstants.UNIT_METERS)
+
+        return Feature.fromGeometry(labelPosition).apply {
+            addStringProperty("label", annotation.labelText)
+            addStringProperty("textAnchor", anchor)
+            addStringProperty("textColorDay", annotation.textColor ?: textColor)
+            addStringProperty("textColorNight", annotation.textColorNight ?: textColorNight)
             addNumberProperty("textSize", annotation.textSize ?: textSize)
         }
     }
@@ -272,9 +305,7 @@ class BuildingAnnotationManager(private val mapView: MapView) {
     private fun createFeature(annotation: BuildingAnnotationOptions): Feature {
         val polygon = Polygon.fromLngLats(listOf(annotation.points))
         return Feature.fromGeometry(polygon).apply {
-            addStringProperty("color", ColorUtils.colorToRgbaString(
-                annotation.fillExtrusionColor ?: fillExtrusionColor
-            ))
+            addStringProperty("color", annotation.fillExtrusionColor ?: fillExtrusionColor)
             addNumberProperty("height", annotation.fillExtrusionHeight ?: fillExtrusionHeight)
             addNumberProperty("base", annotation.fillExtrusionBase ?: fillExtrusionBase)
         }
@@ -282,32 +313,15 @@ class BuildingAnnotationManager(private val mapView: MapView) {
 
     private fun updateSymbolLayerStyle() {
         if (!isInitialized) return
-
-        mapView.mapboxMap.getStyle { style ->
-            try {
-                style.getLayer(symbolLayerId)?.let { layer ->
-                    (layer as? SymbolLayer)?.textFont(textFont)
-                }
-            } catch (e: Exception) {
-                // Silently handle errors
-            }
-        }
+        val style = mapView.mapboxMap.style ?: return
+        (style.getLayer(symbolLayerId) as? SymbolLayer)?.textFont(textFont)
     }
 
     private fun updateLayerOpacity() {
         if (!isInitialized) return
-
-        mapView.mapboxMap.getStyle { style ->
-            try {
-                style.getLayer(layerId)?.let { layer ->
-                    (layer as? com.mapbox.maps.extension.style.layers.generated.FillExtrusionLayer)?.fillExtrusionOpacity(
-                        fillExtrusionOpacity
-                    )
-                }
-            } catch (e: Exception) {
-                // Silently handle errors
-            }
-        }
+        val style = mapView.mapboxMap.style ?: return
+        (style.getLayer(layerId) as? com.mapbox.maps.extension.style.layers.generated.FillExtrusionLayer)
+            ?.fillExtrusionOpacity(fillExtrusionOpacity)
     }
 
     companion object {
